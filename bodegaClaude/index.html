@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario</title>
+ <link rel="stylesheet" href="./styles/styles.css">
+ <script href="./script/auth.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1>Sistema de Inventario</h1>
+            <div class="user-info">
+                <span id="userName">Usuario</span>
+                <button class="btn btn-danger" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <aside class="sidebar">
+        <div class="menu">
+            <h3>Menú Principal</h3>
+            <ul id="menuItems">
+                <!-- Menu items will be populated by JS based on user role -->
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div id="contentArea">
+            <!-- Dynamic content will be loaded here -->
+        </div>
+    </main>
+
+    <script href="./script/main.js">
+   
+    </script>
+</body>
+</html>
