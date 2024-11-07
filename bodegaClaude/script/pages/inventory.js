@@ -1,123 +1,94 @@
 // scripts/pages/inventory.js
-import Table from '../components/Table.js';
-import Modal from '../components/Modal.js';
-import Form from '../components/Form.js';
-import API from '../utils/api.js';
+import PermissionsManager from '../utils/permissions.js';
+import Alert from '../components/Alert.js';
 
 class InventoryPage {
     constructor() {
-        this.table = null;
-        this.modal = null;
-        this.setupComponents();
-        this.loadProducts();
+        this.setupUI();
     }
 
-    setupComponents() {
-        // Configurar tabla
-        this.table = new Table({
-            columns: [
-                { field: 'id', label: 'ID', width: '80px' },
-                { field: 'name', label: 'Nombre del Producto' },
-                { field: 'category', label: 'Categoría' },
-                { field: 'quantity', label: 'Cantidad', type: 'status' },
-                { field: 'location', label: 'Ubicación' },
-                { field: 'lastUpdated', label: 'Última Actualización', 
-                  formatter: (value) => new Date(value).toLocaleDateString() },
-                { type: 'actions', label: 'Acciones', width: '150px' }
-            ],
-            onEdit: (item) => this.openEditModal(item),
-            onDelete: (item) => this.deleteProduct(item),
-            itemsPerPage: 10
-        });
-
-        // Configurar modal
-        this.modal = new Modal({
-            title: 'Agregar Producto',
-            onClose: () => this.resetForm()
-        });
-
-        // Configurar eventos
-        document.getElementById('addProductBtn').addEventListener(
-            'click', 
-            () => this.openAddModal()
-        );
-
-        document.getElementById('searchInput').addEventListener(
-            'input', 
-            (e) => this.handleSearch(e.target.value)
-        );
-
-        // Renderizar tabla
-        const tableContainer = document.getElementById('productsTable');
-        tableContainer.appendChild(this.table.render());
-    }
-
-    async loadProducts() {
-        try {
-            const response = await API.get('/products');
-            if (response.success) {
-                this.table.setData(response.data);
+    setupUI() {
+        // Botón de Agregar Producto
+        const addButton = document.getElementById('addProductBtn');
+        if (addButton) {
+            if (!PermissionsManager.hasPermission('CREATE_PRODUCT')) {
+                addButton.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error loading products:', error);
-            // Aquí podrías mostrar un mensaje de error al usuario
+        }
+
+        // Configurar columnas de la tabla según permisos
+        const columns = [
+            { field: 'name', label: 'Nombre del Producto' },
+            { field: 'category', label: 'Categoría' },
+            { field: 'quantity', label: 'Cantidad' },
+            { field: 'location', label: 'Ubicación' }
+        ];
+
+        // Solo mostrar ciertas columnas según el rol
+        if (PermissionsManager.hasPermission('VIEW_MOVEMENTS')) {
+            columns.push({ field: 'lastMovement', label: 'Último Movimiento' });
+        }
+
+        // Opciones avanzadas para admin y super_admin
+        if (PermissionsManager.hasPermission('EDIT_PRODUCT')) {
+            columns.push({ field: 'minStock', label: 'Stock Mínimo' });
+            columns.push({ field: 'status', label: 'Estado' });
+        }
+
+        // Columna de acciones
+        if (PermissionsManager.hasPermission('EDIT_PRODUCT') || 
+            PermissionsManager.hasPermission('DELETE_PRODUCT')) {
+            columns.push({ field: 'actions', label: 'Acciones' });
+        }
+
+        this.initializeTable(columns);
+    }
+
+    async handleAction(action, productId) {
+        switch (action) {
+            case 'edit':
+                if (!PermissionsManager.hasPermission('EDIT_PRODUCT')) {
+                    Alert.error('No tienes permisos para editar productos');
+                    return;
+                }
+                this.openEditModal(productId);
+                break;
+
+            case 'delete':
+                if (!PermissionsManager.hasPermission('DELETE_PRODUCT')) {
+                    Alert.error('No tienes permisos para eliminar productos');
+                    return;
+                }
+                this.confirmDelete(productId);
+                break;
+
+            case 'move':
+                if (!PermissionsManager.hasPermission('CREATE_MOVEMENT')) {
+                    Alert.error('No tienes permisos para realizar movimientos');
+                    return;
+                }
+                this.openMoveModal(productId);
+                break;
         }
     }
 
-    getProductForm(data = {}) {
-        return new Form({
-            fields: [
-                {
-                    id: 'productName',
-                    name: 'name',
-                    label: 'Nombre del Producto',
-                    type: 'text',
-                    value: data.name || '',
-                    validations: [
-                        { type: 'required', message: 'El nombre es requerido' }
-                    ]
-                },
-                {
-                    id: 'productCategory',
-                    name: 'category',
-                    label: 'Categoría',
-                    type: 'select',
-                    options: [
-                        { value: 'electronics', label: 'Electrónicos' },
-                        { value: 'furniture', label: 'Muebles' },
-                        { value: 'clothing', label: 'Ropa' }
-                    ],
-                    value: data.category || ''
-                },
-                {
-                    id: 'productQuantity',
-                    name: 'quantity',
-                    label: 'Cantidad',
-                    type: 'number',
-                    value: data.quantity || '',
-                    validations: [
-                        { type: 'required', message: 'La cantidad es requerida' },
-                        { type: 'numeric', message: 'Debe ser un número válido' }
-                    ]
-                },
-                {
-                    id: 'productLocation',
-                    name: 'location',
-                    label: 'Ubicación',
-                    type: 'text',
-                    value: data.location || ''
-                }
-            ],
-            submitText: data.id ? 'Actualizar' : 'Agregar',
-            onSubmit: async (formData) => {
-                if (data.id) {
-                    await this.updateProduct(data.id, formData);
-                } else {
-                    await this.createProduct(formData);
+    async createMovement(data) {
+        if (!PermissionsManager.hasPermission('CREATE_MOVEMENT')) {
+            Alert.error('No tienes permisos para realizar esta acción');
+            return;
+        }
+
+        try {
+            const response = await API.post('/movements', data);
+            if (response.success) {
+                Alert.success('Movimiento registrado correctamente');
+                // Si es usuario normal, requerir aprobación
+                if (!PermissionsManager.hasPermission('APPROVE_MOVEMENT')) {
+                    Alert.info('El movimiento está pendiente de aprobación');
                 }
             }
-        });
+        } catch (error) {
+            Alert.error('Error al registrar el movimiento');
+        }
     }
-
-    openAddModal() {
-        this.modal.setTitle('Agr
+}

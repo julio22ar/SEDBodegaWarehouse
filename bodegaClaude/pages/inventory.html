@@ -1,0 +1,57 @@
+<!-- pages/inventory.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Sistema de Inventario</title>
+    <link rel="stylesheet" href="../styles/styles.css">
+    <link rel="stylesheet" href="../styles/pages/inventory.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1>Sistema de Inventario</h1>
+            <div class="user-info">
+                <span id="userName">Usuario</span>
+                <button class="btn btn-danger" onclick="Auth.logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <aside class="sidebar">
+        <div class="menu">
+            <h3>Menú Principal</h3>
+            <ul id="menuItems">
+                <!-- El menú se llenará dinámicamente -->
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Gestión de Inventario</h2>
+            <div class="page-actions">
+                <button id="addProductBtn" class="btn btn-primary" data-permission="INVENTORY:CREATE">
+                    Agregar Producto
+                </button>
+            </div>
+        </div>
+
+        <div class="inventory-controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos...">
+            </div>
+            <div class="filters">
+                <select id="categoryFilter" class="form-control">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="productsTable"></div>
+    </main>
+
+    <script type="module" src="../script/pages/inventory.js"></script>
+</body>
+</html>

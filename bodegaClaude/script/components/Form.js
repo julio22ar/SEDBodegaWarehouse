@@ -1,4 +1,4 @@
-// scripts/components/Form.js
+
 class Form {
     constructor(config) {
         this.config = config;

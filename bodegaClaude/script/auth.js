@@ -1,53 +1,25 @@
-// auth.js
+// scripts/auth.js
 const Auth = {
-    // Almacenamiento temporal de usuarios (en producción esto estaría en la base de datos)
-    users: [
-        {
-            id: 1,
-            username: 'admin',
-            password: 'hash_here', // En producción usar bcrypt o similar
-            role: 'super_admin',
-            name: 'Administrador Principal'
-        }
-    ],
-
-    // Función de inicio de sesión
-    login: function(username, password) {
-        return new Promise((resolve, reject) => {
-            // Simulando una llamada al servidor
-            setTimeout(() => {
-                const user = this.users.find(u => 
-                    u.username === username && u.password === password
-                );
-
-                if (user) {
-                    // En producción, usar JWT o sesiones seguras
-                    sessionStorage.setItem('currentUser', JSON.stringify({
-                        id: user.id,
-                        username: user.username,
-                        role: user.role,
-                        name: user.name
-                    }));
-                    resolve(user);
-                } else {
-                    reject(new Error('Credenciales inválidas'));
-                }
-            }, 300);
-        });
+    login: function(authData) {
+        // Guardar datos de autenticación
+        sessionStorage.setItem('token', authData.token);
+        sessionStorage.setItem('user', JSON.stringify(authData.user));
     },
 
-    // Verificar si el usuario está autenticado
     isAuthenticated: function() {
-        return sessionStorage.getItem('currentUser') !== null;
+        return sessionStorage.getItem('token') !== null;
     },
 
-    // Obtener el usuario actual
     getCurrentUser: function() {
-        const userStr = sessionStorage.getItem('currentUser');
-        return userStr ? JSON.parse(userStr) : null;
+        try {
+            const userStr = sessionStorage.getItem('user');
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return null;
+        }
     },
 
-    // Verificar permisos
     hasPermission: function(requiredRole) {
         const user = this.getCurrentUser();
         if (!user) return false;
@@ -61,24 +33,11 @@ const Auth = {
         return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
     },
 
-    // Cerrar sesión
     logout: function() {
-        sessionStorage.removeItem('currentUser');
-        window.location.href = '/login.html';
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        window.location.href = '/pages/login.html';
     }
 };
 
-// Middleware para proteger rutas
-function requireAuth(requiredRole) {
-    if (!Auth.isAuthenticated()) {
-        window.location.href = '/login.html';
-        return false;
-    }
-
-    if (requiredRole && !Auth.hasPermission(requiredRole)) {
-        window.location.href = '/unauthorized.html';
-        return false;
-    }
-
-    return true;
-}
+export default Auth;

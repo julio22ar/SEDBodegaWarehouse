@@ -1,4 +1,4 @@
-// scripts/components/Modal.js
+
 class Modal {
     constructor(config = {}) {
         this.config = config;

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario</title>
+    <!-- Vincular CSS -->
+    <link rel="stylesheet" href="../styles/styles.css">
+    <link rel="stylesheet" href="../styles/components/navbar.css">
+    <link rel="stylesheet" href="../styles/components/buttons.css">
+    <link rel="stylesheet" href="../styles/pages/pages.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1>Sistema de Inventario</h1>
+            <div class="user-info">
+                <span id="userName">Usuario</span>
+                <button class="btn btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <aside class="sidebar">
+        <div class="menu">
+            <h3>Menú Principal</h3>
+            <ul id="menuItems">
+                <li><a href="./inventory.html">Inventario</a></li>
+                <li><a href="./reports.html">Reportes</a></li>
+                <li><a href="./users.html">Usuarios</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-container">
+            <div class="page-header">
+                <h2 class="page-title">Dashboard</h2>
+                <p class="page-description">Bienvenido al sistema de gestión de inventario</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Productos</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Productos Bajos</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Total Categorías</div>
+                    <div class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Vincular JavaScript -->
+    <script type="module" src="../script/main.js"></script>
+    <script type="module" src="../script/auth.js"></script>
+    <script type="module" src="../script/pages/index.js"></script>
+    <script>
+        function cerrarSesion() {
+            // Limpiar sessionStorage
+            sessionStorage.clear();
+            // Redirigir al login
+            window.location.href = '/pages/login.html';
+        }
+    </script>
+</body>
+</html>

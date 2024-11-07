@@ -1,4 +1,4 @@
-// scripts/components/Table.js
+
 class Table {
     constructor(config) {
         this.config = config;

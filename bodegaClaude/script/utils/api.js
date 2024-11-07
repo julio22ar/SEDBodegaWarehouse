@@ -2,14 +2,12 @@
 const API = {
     baseURL: 'http://localhost:3000',
     
-    // Método genérico para hacer peticiones
     async fetchAPI(endpoint, options = {}) {
-        const user = JSON.parse(sessionStorage.getItem('currentUser'));
+        const user = JSON.parse(sessionStorage.getItem('user'));
         
         const defaultHeaders = {
             'Content-Type': 'application/json',
-            // En producción, aquí iría el token JWT
-            'Authorization': user ? `Bearer ${user.token}` : ''
+            'Authorization': user ? `Bearer ${sessionStorage.getItem('token')}` : ''
         };
 
         try {
@@ -21,39 +19,42 @@ const API = {
                 }
             });
 
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(data.error || 'Error en la petición');
             }
 
-            const data = await response.json();
-            return { success: true, data };
+            return data;
         } catch (error) {
             console.error('API Error:', error);
-            return { success: false, error: error.message };
+            throw error;
         }
     },
 
-    // Métodos específicos para cada tipo de petición
-    get(endpoint) {
-        return this.fetchAPI(endpoint, { method: 'GET' });
-    },
-
-    post(endpoint, data) {
+    // Métodos específicos
+    async post(endpoint, data) {
         return this.fetchAPI(endpoint, {
             method: 'POST',
             body: JSON.stringify(data)
         });
     },
 
-    put(endpoint, data) {
+    async get(endpoint) {
+        return this.fetchAPI(endpoint);
+    },
+
+    async put(endpoint, data) {
         return this.fetchAPI(endpoint, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     },
 
-    delete(endpoint) {
-        return this.fetchAPI(endpoint, { method: 'DELETE' });
+    async delete(endpoint) {
+        return this.fetchAPI(endpoint, {
+            method: 'DELETE'
+        });
     }
 };
 
