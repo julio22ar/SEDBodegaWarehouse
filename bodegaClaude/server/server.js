@@ -1,64 +1,8 @@
 // server/server.js
 const http = require('http');
+const pool = require('./config/database');
 
-// Función de hash (la misma que en el frontend)
-function hashPassword(password) {
-    let hash = 0;
-    const salt = "inventarioApp2024";
-    const combinedString = password + salt;
-    
-    for (let i = 0; i < combinedString.length; i++) {
-        const char = combinedString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    
-    return Math.abs(hash).toString(16);
-}
-
-// Usuarios de prueba con contraseñas hasheadas
-const users = [
-    {
-        id: 1,
-        username: 'admin',
-        // admin123 hasheado
-        password: hashPassword('admin123'),
-        role: 'super_admin',
-        name: 'Administrador'
-    },
-    {
-        id: 2,
-        username: 'usuario',
-        // usuario123 hasheado
-        password: hashPassword('usuario123'),
-        role: 'user',
-        name: 'Usuario Normal'
-    }
-];
-
-// Headers CORS
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'OPTIONS, POST, GET, PUT, DELETE',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '2592000'
-};
-
-// Función para generar un token simple
-function generateToken(user) {
-    const tokenData = {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        timestamp: new Date().getTime()
-    };
-    
-    // Codificar en base64
-    return Buffer.from(JSON.stringify(tokenData)).toString('base64');
-}
-
-// Función para procesar el body
-function getRequestBody(req) {
+async function getRequestBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
         req.on('data', chunk => {
@@ -74,90 +18,97 @@ function getRequestBody(req) {
     });
 }
 
-// Crear servidor
 const server = http.createServer(async (req, res) => {
-    // Manejar CORS
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'application/json');
+
     if (req.method === 'OPTIONS') {
-        res.writeHead(204, corsHeaders);
+        res.writeHead(204);
         res.end();
         return;
     }
 
-    // Agregar headers CORS
-    Object.keys(corsHeaders).forEach(key => {
-        res.setHeader(key, corsHeaders[key]);
-    });
-    res.setHeader('Content-Type', 'application/json');
-
-    // Ruta de login
     if (req.url === '/auth/login' && req.method === 'POST') {
         try {
             const body = await getRequestBody(req);
-            const { username, password } = body;
+            console.log('Datos recibidos:', {
+                username: body.username,
+                password: '***' // No loggeamos la contraseña real
+            });
 
-            // Buscar usuario
-            const user = users.find(u => u.username === username);
-            if (!user) {
-                res.writeHead(401);
-                res.end(JSON.stringify({ 
-                    success: false, 
-                    error: 'Usuario o contraseña incorrectos' 
+            // Verificar que los campos necesarios estén presentes
+            if (!body.username || !body.password) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                    success: false,
+                    error: 'Usuario y contraseña son requeridos'
                 }));
                 return;
             }
 
-            // Verificar contraseña
-            const hashedPassword = hashPassword(password);
-            if (hashedPassword !== user.password) {
+            // Buscar el usuario por nombre de usuario
+            const [users] = await pool.execute(
+                'SELECT * FROM users WHERE username = ?',
+                [body.username]
+            );
+
+            // Verificar si se encontró el usuario
+            if (users.length === 0) {
                 res.writeHead(401);
-                res.end(JSON.stringify({ 
-                    success: false, 
-                    error: 'Usuario o contraseña incorrectos' 
+                res.end(JSON.stringify({
+                    success: false,
+                    error: 'Usuario o contraseña incorrectos'
                 }));
                 return;
             }
 
-            // Generar token simple
-            const token = generateToken(user);
-
-            // Respuesta exitosa
-            res.writeHead(200);
-            res.end(JSON.stringify({
-                success: true,
-                data: {
-                    user: {
-                        id: user.id,
-                        username: user.username,
-                        role: user.role,
-                        name: user.name
-                    },
-                    token
-                }
-            }));
-
+            const user = users[0];
+            // Comparar la contraseña directamente ya que están en texto plano
+            if (body.password === user.password) {
+                console.log('Login exitoso para usuario:', user.username);
+                
+                res.writeHead(200);
+                res.end(JSON.stringify({
+                    success: true,
+                    data: {
+                        user: {
+                            id: user.id,
+                            username: user.username,
+                            name: user.name,
+                            role: user.role
+                        },
+                        token: 'token-' + Date.now()
+                    }
+                }));
+            } else {
+                console.log('Contraseña incorrecta para usuario:', user.username);
+                res.writeHead(401);
+                res.end(JSON.stringify({
+                    success: false,
+                    error: 'Usuario o contraseña incorrectos'
+                }));
+            }
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('Error del servidor:', error);
             res.writeHead(500);
-            res.end(JSON.stringify({ 
-                success: false, 
-                error: 'Error interno del servidor' 
+            res.end(JSON.stringify({
+                success: false,
+                error: 'Error interno del servidor'
             }));
         }
     } else {
-        // Ruta no encontrada
         res.writeHead(404);
-        res.end(JSON.stringify({ 
-            success: false, 
-            error: 'Ruta no encontrada' 
+        res.end(JSON.stringify({
+            success: false,
+            error: 'Ruta no encontrada'
         }));
     }
 });
 
-// Iniciar servidor
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
-    console.log('Usuarios disponibles:');
-    console.log('1. admin / admin123 (Super Admin)');
-    console.log('2. usuario / usuario123 (Usuario Normal)');
 });

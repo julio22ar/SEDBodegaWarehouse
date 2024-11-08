@@ -1,47 +1,47 @@
-
+// scripts/pages/index.js
 import API from '../utils/api.js';
+import Auth from '../auth.js';
 import Alert from '../components/Alert.js';
 
 class DashboardPage {
     constructor() {
-        this.stats = {
-            totalProducts: 0,
-            lowStock: 0,
-            totalCategories: 0
-        };
         this.init();
     }
 
     async init() {
         // Verificar autenticación
-        const user = JSON.parse(sessionStorage.getItem('user'));
-        if (!user) {
+        if (!Auth.isAuthenticated()) {
             window.location.href = '/pages/login.html';
             return;
         }
 
-        // Mostrar nombre de usuario
-        document.getElementById('userName').textContent = user.name;
+        // Cargar datos del usuario
+        const user = Auth.getCurrentUser();
+        this.updateUserInfo(user);
 
         // Cargar datos del dashboard
         await this.loadDashboardData();
-        this.setupEventListeners();
+    }
+
+    updateUserInfo(user) {
+        const userNameElement = document.getElementById('userName');
+        if (userNameElement) {
+            userNameElement.textContent = user.name;
+        }
     }
 
     async loadDashboardData() {
         try {
-            // Cargar estadísticas básicas
-            const stats = await API.get('/dashboard/stats');
-            this.updateStats(stats.data);
+            // Cargar todo en paralelo
+            const [stats, lowStockProducts, recentActivity] = await Promise.all([
+                API.dashboard.getStats(),
+                API.products.getLowStock(),
+                API.dashboard.getRecentActivity()
+            ]);
 
-            // Cargar productos con bajo stock
-            const lowStock = await API.get('/products/low-stock');
-            this.updateLowStockTable(lowStock.data);
-
-            // Cargar actividad reciente
-            const activity = await API.get('/dashboard/recent-activity');
-            this.updateActivityFeed(activity.data);
-
+            this.updateStats(stats);
+            this.updateLowStockTable(lowStockProducts);
+            this.updateActivityFeed(recentActivity);
         } catch (error) {
             Alert.error('Error al cargar los datos del dashboard');
             console.error('Error loading dashboard:', error);
@@ -49,18 +49,18 @@ class DashboardPage {
     }
 
     updateStats(stats) {
-        // Actualizar las tarjetas de estadísticas
-        const statsElements = {
-            totalProducts: document.querySelector('[data-stat="total-products"]'),
-            lowStock: document.querySelector('[data-stat="low-stock"]'),
-            totalCategories: document.querySelector('[data-stat="total-categories"]')
+        const elements = {
+            totalProducts: document.getElementById('totalProducts'),
+            lowStock: document.getElementById('lowStock'),
+            totalCategories: document.getElementById('totalCategories')
         };
 
-        for (const [key, element] of Object.entries(statsElements)) {
+        // Actualizar cada estadística si existe el elemento
+        Object.entries(elements).forEach(([key, element]) => {
             if (element && stats[key] !== undefined) {
                 element.textContent = stats[key].toLocaleString();
             }
-        }
+        });
     }
 
     updateLowStockTable(products) {
@@ -69,19 +69,14 @@ class DashboardPage {
 
         tableBody.innerHTML = products.map(product => `
             <tr>
-                <td>${product.name}</td>
+                <td>${this.escapeHtml(product.name)}</td>
                 <td>${product.quantity}</td>
                 <td>${product.minimum_stock}</td>
+                <td>${this.escapeHtml(product.category_name || 'Sin categoría')}</td>
                 <td>
                     <span class="status-badge ${this.getStockStatusClass(product)}">
                         ${this.getStockStatusText(product)}
                     </span>
-                </td>
-                <td>
-                    <button class="btn btn-primary btn-sm" 
-                            onclick="window.location.href='/pages/inventory.html?id=${product.id}'">
-                        Ver Detalles
-                    </button>
                 </td>
             </tr>
         `).join('');
@@ -93,15 +88,25 @@ class DashboardPage {
 
         feedContainer.innerHTML = activities.map(activity => `
             <div class="activity-item">
-                <div class="activity-icon ${this.getActivityIconClass(activity.type)}">
+                <div class="activity-icon ${this.getActivityTypeClass(activity.type)}">
                     ${this.getActivityIcon(activity.type)}
                 </div>
                 <div class="activity-content">
-                    <div class="activity-text">${activity.description}</div>
-                    <div class="activity-time">${this.formatDate(activity.created_at)}</div>
+                    <p class="activity-text">${this.escapeHtml(activity.description)}</p>
+                    <small class="activity-time">
+                        ${this.formatDate(activity.created_at)}
+                        ${activity.user_name ? `por ${this.escapeHtml(activity.user_name)}` : ''}
+                    </small>
                 </div>
             </div>
         `).join('');
+    }
+
+    // Métodos auxiliares
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     getStockStatusClass(product) {
@@ -118,82 +123,38 @@ class DashboardPage {
         return 'Normal';
     }
 
-    getActivityIconClass(type) {
-        const icons = {
-            'create': 'success',
-            'update': 'warning',
-            'delete': 'danger',
-            'login': 'info'
+    getActivityTypeClass(type) {
+        const classes = {
+            create: 'activity-create',
+            update: 'activity-update',
+            delete: 'activity-delete',
+            login: 'activity-login'
         };
-        return icons[type] || 'info';
+        return classes[type] || 'activity-default';
     }
 
     getActivityIcon(type) {
         const icons = {
-            'create': '➕',
-            'update': '🔄',
-            'delete': '❌',
-            'login': '👤'
+            create: '➕',
+            update: '🔄',
+            delete: '❌',
+            login: '👤'
         };
         return icons[type] || '📝';
     }
 
     formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
+        return new Date(dateString).toLocaleString('es-ES', {
             year: 'numeric',
+            month: 'short',
+            day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         });
     }
-
-    setupEventListeners() {
-        // Actualizar datos cada 5 minutos
-        setInterval(() => this.loadDashboardData(), 5 * 60 * 1000);
-
-        // Manejar filtros si existen
-        const filterSelect = document.getElementById('timeFilter');
-        if (filterSelect) {
-            filterSelect.addEventListener('change', () => this.handleFilterChange());
-        }
-    }
-
-    async handleFilterChange() {
-        const filterSelect = document.getElementById('timeFilter');
-        const timeRange = filterSelect.value;
-
-        try {
-            const stats = await API.get(`/dashboard/stats?timeRange=${timeRange}`);
-            this.updateStats(stats.data);
-        } catch (error) {
-            Alert.error('Error al actualizar las estadísticas');
-            console.error('Error updating stats:', error);
-        }
-    }
-
-    // Métodos para exportar datos si se necesitan
-    async exportDashboardData() {
-        try {
-            const response = await API.get('/dashboard/export');
-            const blob = new Blob([response.data], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'dashboard-report.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            Alert.error('Error al exportar los datos');
-            console.error('Error exporting data:', error);
-        }
-    }
 }
 
-// Inicializar la página cuando el DOM esté listo
+// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new DashboardPage();
 });

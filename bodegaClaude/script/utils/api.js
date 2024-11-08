@@ -3,14 +3,14 @@ const API = {
     baseURL: 'http://localhost:3000',
     
     async fetchAPI(endpoint, options = {}) {
-        const user = JSON.parse(sessionStorage.getItem('user'));
-        
-        const defaultHeaders = {
-            'Content-Type': 'application/json',
-            'Authorization': user ? `Bearer ${sessionStorage.getItem('token')}` : ''
-        };
-
         try {
+            const token = sessionStorage.getItem('token');
+            
+            const defaultHeaders = {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 ...options,
                 headers: {
@@ -21,40 +21,48 @@ const API = {
 
             const data = await response.json();
             
-            if (!response.ok) {
+            if (!data.success) {
                 throw new Error(data.error || 'Error en la petición');
             }
 
-            return data;
+            return data.data; // Retornamos directamente data.data
         } catch (error) {
             console.error('API Error:', error);
             throw error;
         }
     },
 
-    // Métodos específicos
-    async post(endpoint, data) {
-        return this.fetchAPI(endpoint, {
+    // Métodos específicos para cada entidad
+    auth: {
+        login: (credentials) => API.fetchAPI('/auth/login', {
             method: 'POST',
-            body: JSON.stringify(data)
-        });
+            body: JSON.stringify(credentials)
+        }),
     },
 
-    async get(endpoint) {
-        return this.fetchAPI(endpoint);
-    },
-
-    async put(endpoint, data) {
-        return this.fetchAPI(endpoint, {
+    products: {
+        getAll: () => API.fetchAPI('/products'),
+        getLowStock: () => API.fetchAPI('/products/low-stock'),
+        create: (product) => API.fetchAPI('/products', {
+            method: 'POST',
+            body: JSON.stringify(product)
+        }),
+        update: (id, product) => API.fetchAPI(`/products/${id}`, {
             method: 'PUT',
-            body: JSON.stringify(data)
-        });
+            body: JSON.stringify(product)
+        }),
+        delete: (id) => API.fetchAPI(`/products/${id}`, {
+            method: 'DELETE'
+        })
     },
 
-    async delete(endpoint) {
-        return this.fetchAPI(endpoint, {
-            method: 'DELETE'
-        });
+    categories: {
+        getAll: () => API.fetchAPI('/categories')
+    },
+
+    dashboard: {
+        getStats: () => API.fetchAPI('/dashboard/stats'),
+        getRecentActivity: () => API.fetchAPI('/dashboard/recent-activity')
     }
 };
 
