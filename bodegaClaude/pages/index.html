@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Inventario</title>
-    <!-- Vincular CSS -->
     <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="../styles/components/navbar.css">
     <link rel="stylesheet" href="../styles/components/buttons.css">
@@ -14,23 +13,17 @@
     <nav class="navbar">
         <div class="navbar-content">
             <h1>Sistema de Inventario</h1>
+            <div class="nav-links">
+                <a href="./inventory.html" class="nav-link">Inventario</a>
+                <a href="./reports.html" class="nav-link">Reportes</a>
+                <a href="./users.html" class="nav-link">Usuarios</a>
+            </div>
             <div class="user-info">
                 <span id="userName">Usuario</span>
                 <button class="btn btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
         </div>
     </nav>
-
-    <aside class="sidebar">
-        <div class="menu">
-            <h3>Menú Principal</h3>
-            <ul id="menuItems">
-                <li><a href="./inventory.html">Inventario</a></li>
-                <li><a href="./reports.html">Reportes</a></li>
-                <li><a href="./users.html">Usuarios</a></li>
-            </ul>
-        </div>
-    </aside>
 
     <main class="main-content">
         <div class="page-container">
