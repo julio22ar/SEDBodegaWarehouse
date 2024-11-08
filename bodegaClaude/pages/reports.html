@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Reportes - Inventario</title>
+    <link rel="stylesheet" href="../styles/styles.css">
+    <!-- inventory -->
+    <link rel="stylesheet" href="../styles/pages/inventory.css">
+    <!-- pages -->
+    <link rel="stylesheet" href="../styles/pages/pages.css">
+    <!-- tables -->
+    <link rel="stylesheet" href="../styles/components/tables.css">
+    <!-- alerts -->
+    <link rel="stylesheet" href="../styles/components/alerts.css">
+    <!-- buttons -->
+    <link rel="stylesheet" href="../styles/components/buttons.css">
+    <!-- cards -->
+    <link rel="stylesheet" href="../styles/components/cards.css">
+    <!-- forms -->
+    <link rel="stylesheet" href="../styles/components/forms.css">
+    <!-- modal -->
+    <link rel="stylesheet" href="../styles/components/modal.css">
+    <!-- navbar -->
+    <link rel="stylesheet" href="../styles/components/navbar.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1>Panel de Reportes</h1>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Ir al Inventario</a>
+                <a href="admin_dashboard.html" class="nav-link">Panel de Administrador</a>
+                <a href="login.html" class="nav-link">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <header class="page-header">
+            <h2 class="page-title">Generación de Reportes de Inventario</h2>
+            <p class="page-description">Seleccione el tipo de reporte que desea generar para obtener información detallada del inventario y ventas.</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="card-body">
+                    <button class="btn btn-primary" id="generateInventoryReportBtn">Generar Reporte de Inventario</button>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="card-body">
+                    <button class="btn btn-secondary" id="generateSalesReportBtn">Generar Reporte de Ventas</button>
+                </div>
+            </div>
+        </div>
+
+        <section class="inventory-table-container">
+            <header class="table-header">
+                <h3 class="table-title">Reportes Generados</h3>
+            </header>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tipo de Reporte</th>
+                        <th>Fecha de Generación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsTableBody">
+                    <!-- Aquí se mostrarán los reportes generados -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalles del Reporte</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Contenido del modal -->
+                <p>Aquí se mostrarán los detalles del reporte seleccionado.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/reports_dashboard.js"></script>
+</body>
+</html>
