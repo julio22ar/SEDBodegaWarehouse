@@ -1,7 +1,9 @@
 // server/server.js
 const http = require('http');
 const pool = require('./config/database');
+require('dotenv').config();
 
+// Middleware para procesar el body de las peticiones
 async function getRequestBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -19,43 +21,33 @@ async function getRequestBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-    // CORS headers
+    // Configurar headers CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET, PUT, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
 
+    // Manejar preflight requests
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
         return;
     }
 
-    if (req.url === '/auth/login' && req.method === 'POST') {
-        try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const path = url.pathname;
+
+    try {
+        // Ruta de login
+        if (path === '/auth/login' && req.method === 'POST') {
             const body = await getRequestBody(req);
-            console.log('Datos recibidos:', {
-                username: body.username,
-                password: '***' // No loggeamos la contraseña real
-            });
+            console.log('Intento de login:', { username: body.username });
 
-            // Verificar que los campos necesarios estén presentes
-            if (!body.username || !body.password) {
-                res.writeHead(400);
-                res.end(JSON.stringify({
-                    success: false,
-                    error: 'Usuario y contraseña son requeridos'
-                }));
-                return;
-            }
-
-            // Buscar el usuario por nombre de usuario
             const [users] = await pool.execute(
                 'SELECT * FROM users WHERE username = ?',
                 [body.username]
             );
 
-            // Verificar si se encontró el usuario
             if (users.length === 0) {
                 res.writeHead(401);
                 res.end(JSON.stringify({
@@ -66,10 +58,7 @@ const server = http.createServer(async (req, res) => {
             }
 
             const user = users[0];
-            // Comparar la contraseña directamente ya que están en texto plano
             if (body.password === user.password) {
-                console.log('Login exitoso para usuario:', user.username);
-                
                 res.writeHead(200);
                 res.end(JSON.stringify({
                     success: true,
@@ -84,31 +73,144 @@ const server = http.createServer(async (req, res) => {
                     }
                 }));
             } else {
-                console.log('Contraseña incorrecta para usuario:', user.username);
                 res.writeHead(401);
                 res.end(JSON.stringify({
                     success: false,
                     error: 'Usuario o contraseña incorrectos'
                 }));
             }
-        } catch (error) {
-            console.error('Error del servidor:', error);
-            res.writeHead(500);
+        }
+
+        // Ruta para obtener productos
+        else if (path === '/api/products' && req.method === 'GET') {
+            const [products] = await pool.execute(`
+                SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id
+            `);
+            
+            res.writeHead(200);
             res.end(JSON.stringify({
-                success: false,
-                error: 'Error interno del servidor'
+                success: true,
+                data: products
             }));
         }
-    } else {
-        res.writeHead(404);
+
+        // Ruta para obtener un producto específico
+        else if (path.match(/^\/api\/products\/\d+$/) && req.method === 'GET') {
+            const productId = path.split('/')[3];
+            const [products] = await pool.execute(
+                'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?',
+                [productId]
+            );
+
+            if (products.length > 0) {
+                res.writeHead(200);
+                res.end(JSON.stringify({
+                    success: true,
+                    data: products[0]
+                }));
+            } else {
+                res.writeHead(404);
+                res.end(JSON.stringify({
+                    success: false,
+                    error: 'Producto no encontrado'
+                }));
+            }
+        }
+
+        // Ruta para estadísticas del inventario
+        else if (path === '/api/inventory/stats' && req.method === 'GET') {
+            const [totalProducts] = await pool.execute('SELECT COUNT(*) as total FROM products');
+            const [lowStock] = await pool.execute(
+                'SELECT COUNT(*) as total FROM products WHERE quantity < minimum_stock'
+            );
+            const [categories] = await pool.execute('SELECT COUNT(*) as total FROM categories');
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                success: true,
+                data: {
+                    totalProducts: totalProducts[0].total,
+                    lowStock: lowStock[0].total,
+                    categories: categories[0].total
+                }
+            }));
+        }
+
+        // Ruta para obtener categorías
+        else if (path === '/api/categories' && req.method === 'GET') {
+            const [categories] = await pool.execute('SELECT * FROM categories');
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                success: true,
+                data: categories
+            }));
+        }
+
+        // Ruta para productos con bajo stock
+        else if (path === '/api/products/low-stock' && req.method === 'GET') {
+            const [products] = await pool.execute(`
+                SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.quantity < p.minimum_stock
+            `);
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                success: true,
+                data: products
+            }));
+        }
+
+        // Ruta para actualizar producto
+        else if (path.match(/^\/api\/products\/\d+$/) && req.method === 'PUT') {
+            const productId = path.split('/')[3];
+            const body = await getRequestBody(req);
+            
+            await pool.execute(
+                'UPDATE products SET name = ?, quantity = ?, minimum_stock = ?, location = ? WHERE id = ?',
+                [body.name, body.quantity, body.minimum_stock, body.location, productId]
+            );
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                success: true,
+                message: 'Producto actualizado exitosamente'
+            }));
+        }
+
+        // Ruta no encontrada
+        else {
+            res.writeHead(404);
+            res.end(JSON.stringify({
+                success: false,
+                error: 'Ruta no encontrada'
+            }));
+        }
+    } catch (error) {
+        console.error('Server error:', error);
+        res.writeHead(500);
         res.end(JSON.stringify({
             success: false,
-            error: 'Ruta no encontrada'
+            error: 'Error interno del servidor'
         }));
     }
 });
 
+// Iniciar servidor
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+// Manejar errores no capturados
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+    console.error('Unhandled Rejection:', error);
 });

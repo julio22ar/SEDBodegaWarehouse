@@ -1,10 +1,9 @@
-<!-- pages/inventory.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario - Sistema de Inventario</title>
+    <title>Inventario - Sistema de Bodega</title>
     <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="../styles/pages/inventory.css">
 </head>
@@ -14,7 +13,7 @@
             <h1>Sistema de Inventario</h1>
             <div class="user-info">
                 <span id="userName">Usuario</span>
-                <button class="btn btn-danger" onclick="Auth.logout()">Cerrar Sesión</button>
+                <button class="btn btn-danger" onclick="logout()">Cerrar Sesión</button>
             </div>
         </div>
     </nav>
@@ -23,7 +22,8 @@
         <div class="menu">
             <h3>Menú Principal</h3>
             <ul id="menuItems">
-                <!-- El menú se llenará dinámicamente -->
+                <li><a href="#" class="active">Inventario</a></li>
+                <li><a href="#">Movimientos</a></li>
             </ul>
         </div>
     </aside>
@@ -31,25 +31,70 @@
     <main class="main-content">
         <div class="page-header">
             <h2>Gestión de Inventario</h2>
-            <div class="page-actions">
-                <button id="addProductBtn" class="btn btn-primary" data-permission="INVENTORY:CREATE">
-                    Agregar Producto
-                </button>
+            <div class="header-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar productos...">
+                    <button class="btn btn-icon">🔍</button>
+                </div>
+                <div class="filter-box">
+                    <select id="categoryFilter" class="form-control">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <select id="statusFilter" class="form-control">
+                        <option value="">Todos los estados</option>
+                        <option value="in_stock">En Stock</option>
+                        <option value="low_stock">Stock Bajo</option>
+                        <option value="out_stock">Sin Stock</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div class="inventory-controls">
-            <div class="search-box">
-                <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos...">
+        <div class="inventory-stats">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalProducts">0</span>
+                    <span class="stat-label">Total Productos</span>
+                </div>
             </div>
-            <div class="filters">
-                <select id="categoryFilter" class="form-control">
-                    <option value="">Todas las categorías</option>
-                </select>
+            <div class="stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="lowStock">0</span>
+                    <span class="stat-label">Stock Bajo</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✨</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="categories">0</span>
+                    <span class="stat-label">Categorías</span>
+                </div>
             </div>
         </div>
 
-        <div id="productsTable"></div>
+        <div class="inventory-table-container">
+            <table id="inventoryTable" class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Ubicación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTableBody">
+                    <!-- Los datos se cargarán dinámicamente -->
+                </tbody>
+            </table>
+            <div id="pagination" class="pagination">
+                <!-- Paginación se generará dinámicamente -->
+            </div>
+        </div>
     </main>
 
     <script type="module" src="../script/pages/inventory.js"></script>
