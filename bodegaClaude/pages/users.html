@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Usuarios - Inventario</title>
+    <link rel="stylesheet" href="../styles/styles.css">
+    <link rel="stylesheet" href="../styles/pages/inventory.css">
+    <link rel="stylesheet" href="../styles/pages/pages.css">
+    <link rel="stylesheet" href="../styles/components/tables.css">
+    <link rel="stylesheet" href="../styles/components/alerts.css">
+    <link rel="stylesheet" href="../styles/components/buttons.css">
+    <link rel="stylesheet" href="../styles/components/cards.css">
+    <link rel="stylesheet" href="../styles/components/forms.css">
+    <link rel="stylesheet" href="../styles/components/modal.css">
+    <link rel="stylesheet" href="../styles/components/navbar.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1>Panel de Usuarios</h1>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Ir al Inventario</a>
+                <a href="admin_dashboard.html" class="nav-link">Panel de Administrador</a>
+                <a href="login.html" class="nav-link">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <header class="page-header">
+            <h2 class="page-title">Gestíon de Usuarios</h2>
+            <p class="page-description">Agregue, edite o elimine usuarios registrados en el sistema de inventario.</p>
+        </header>
+
+        <div class="actions-grid">
+            <button class="btn btn-primary" id="addUserBtn">Agregar Usuario</button>
+        </div>
+
+        <section class="users-table-container">
+            <header class="table-header">
+                <h3 class="table-title">Usuarios Registrados</h3>
+            </header>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <!-- Aquí se mostrarán los usuarios registrados -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <div id="userModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="userModalTitle">Agregar Usuario</h3>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label for="userName">Nombre del Usuario</label>
+                        <input type="text" id="userName" class="form-input" name="userName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email</label>
+                        <input type="email" id="userEmail" class="form-input" name="userEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userRole">Rol</label>
+                        <select id="userRole" class="form-select" name="userRole" required>
+                            <option value="usuario">Usuario</option>
+                            <option value="administrador">Administrador</option>
+                            <option value="superadministrador">Superadministrador</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/users_dashboard.js"></script>
+</body>
+</html>
